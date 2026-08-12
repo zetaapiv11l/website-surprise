@@ -8,7 +8,7 @@ const SITE_CONFIG = {
   name: "Sayangku",
   nickname: "Sayang",
   yourName: "Aku",
-  whatsappNumber: "6285762554515",
+  whatsappNumber: "6283195426349",
 
   music: [
     // isi "audio" dengan link mp3 langsung (contoh: link Google Drive versi direct-download, atau hosting lain).
