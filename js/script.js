@@ -5,16 +5,16 @@
 
 /* ---------- 1. CONFIGURATION (edit everything here) ---------- */
 const SITE_CONFIG = {
-  name: "Dia",
+  name: "Sayangku",
   nickname: "Sayang",
   yourName: "Aku",
   whatsappNumber: "6285762554515",
-  telegramApiUrl: "", // isi jika backend Telegram sudah ada. Jangan taruh bot token di sini.
+  telegramApiUrl: "8312491589:AAEqDioxo5vfA913DzuoI1tYifBfq39i8EQ", // isi jika backend Telegram sudah ada. Jangan taruh bot token di sini.
 
   music: [
     // isi "audio" dengan link mp3 langsung (contoh: link Google Drive versi direct-download, atau hosting lain).
     // Kalau semua "audio" kosong, player musik otomatis tidak akan muncul sama sekali.
-    { title: "Lagu Favorit 1", artist: "Artist", audio: "", cover: "" },
+    { title: "Lagu Favorit 1", artist: "Artist", audio: "https://www.image2url.com/r2/default/audio/1786535986055-588e4c88-b92a-4e75-8aad-359283cca7d5.mp3", cover: "" },
     { title: "Lagu Favorit 2", artist: "Artist", audio: "", cover: "" }
   ],
 
