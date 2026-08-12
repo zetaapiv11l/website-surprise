@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Games 🎮</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="games">
+<div id="app-decor"></div>
+<div id="app-nav"></div>
+<main class="page">
+  <div class="eyebrow">Main Dulu Yuk</div>
+  <h1>Mini Games 🎮</h1>
+
+  <div class="btn-row" style="margin-bottom:10px;">
+    <button class="btn secondary game-tab active" data-target="panel-catch">🌸 Catch Flower</button>
+    <button class="btn secondary game-tab" data-target="panel-memory">🃏 Memory</button>
+    <button class="btn secondary game-tab" data-target="panel-reaction">⚡ Reaction</button>
+    <button class="btn secondary game-tab" data-target="panel-guess">🔢 Guess</button>
+  </div>
+
+  <div class="game-panel" id="panel-catch">
+    <div class="stat-row"><span>Score: <span id="catch-score">0</span></span><span>Time: <span id="catch-time">30</span>s</span><span>High: <span id="catch-hs">0</span></span></div>
+    <div class="game-area" id="game-catch-area"></div>
+    <div class="btn-row"><button class="btn" id="catch-start">Mulai / Ulangi</button></div>
+  </div>
+
+  <div class="game-panel hidden" id="panel-memory">
+    <div class="stat-row"><span>Percobaan: <span id="mem-tries">0</span></span></div>
+    <div class="mem-grid" id="mem-grid"></div>
+    <div class="btn-row"><button class="btn" id="mem-start">Acak Ulang</button></div>
+  </div>
+
+  <div class="game-panel hidden" id="panel-reaction">
+    <div class="game-area center" id="reaction-zone" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--pink-600);cursor:pointer;"></div>
+    <p class="center" id="reaction-result" style="margin-top:10px;"></p>
+  </div>
+
+  <div class="game-panel hidden" id="panel-guess">
+    <p class="lede">Aku mikirin angka antara 1-50, coba tebak!</p>
+    <input type="number" id="guess-input" class="pw" placeholder="Masukkan angka...">
+    <div class="btn-row"><button class="btn" id="guess-btn">Tebak</button></div>
+    <p class="center" id="guess-hint"></p>
+  </div>
+
+  <div class="btn-row"><a class="btn ghost" href="timeline.html" id="next-link">Lanjut ke Timeline 🗺️</a></div>
+</main>
+<script src="js/script.js" defer></script>
+</body>
+</html>
