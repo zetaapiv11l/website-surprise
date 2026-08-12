@@ -9,7 +9,6 @@ const SITE_CONFIG = {
   nickname: "Sayang",
   yourName: "Aku",
   whatsappNumber: "6285762554515",
-  telegramApiUrl: "8312491589:AAEqDioxo5vfA913DzuoI1tYifBfq39i8EQ", // isi jika backend Telegram sudah ada. Jangan taruh bot token di sini.
 
   music: [
     // isi "audio" dengan link mp3 langsung (contoh: link Google Drive versi direct-download, atau hosting lain).
@@ -441,6 +440,82 @@ function initMusicPlayer(){
   }
 }
 
+/* ---------- 5b-2. SPA-STYLE PAGE NAVIGATION ----------
+   Semua pindah halaman diambil lewat fetch() lalu cuma <main> yang diganti,
+   bukan reload penuh browser. Karena itu elemen <audio> (bgAudio) gak pernah
+   dibuat ulang / dihentikan saat ganti halaman -> musik lanjut mulus, gak macet-macet.
+   Kalau fetch gagal (misal dibuka langsung dari file lokal tanpa server),
+   otomatis fallback ke pindah halaman biasa. */
+let isSpaNavigating = false;
+let nextLinkGuardInterval = null;
+
+function isInternalPageLink(a){
+  if(!a || !a.getAttribute) return false;
+  const href = a.getAttribute("href");
+  if(!href) return false;
+  if(href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("javascript:")) return false;
+  if(a.target && a.target !== "" && a.target !== "_self") return false;
+  if(a.hasAttribute("download")) return false;
+  let url;
+  try{ url = new URL(href, location.href); }catch(e){ return false; }
+  if(url.origin !== location.origin) return false;
+  if(!/\.html?$/i.test(url.pathname)) return false;
+  return true;
+}
+
+async function navigateTo(url, opts){
+  const push = !opts || opts.push !== false;
+  if(isSpaNavigating) return;
+  const targetUrl = new URL(url, location.href).href;
+  if(targetUrl === location.href && push) return;
+  isSpaNavigating = true;
+  const oldMain = document.querySelector("main");
+  if(oldMain) oldMain.style.opacity = "0.35";
+  try{
+    const res = await fetch(targetUrl, { credentials: "same-origin" });
+    if(!res.ok) throw new Error("fetch gagal: " + res.status);
+    const html = await res.text();
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const newMain = doc.querySelector("main");
+    if(!newMain) throw new Error("halaman tujuan gak punya <main>");
+
+    document.title = doc.title || document.title;
+    if(doc.body.dataset.page) document.body.dataset.page = doc.body.dataset.page;
+    if(doc.body.dataset.navfile) document.body.dataset.navfile = doc.body.dataset.navfile;
+    else delete document.body.dataset.navfile;
+
+    const currentMain = document.querySelector("main");
+    if(currentMain) currentMain.replaceWith(newMain);
+    else document.body.appendChild(newMain);
+    newMain.style.opacity = "";
+
+    const decorHost = document.getElementById("app-decor");
+    if(decorHost) decorHost.innerHTML = "";
+
+    if(nextLinkGuardInterval){ clearInterval(nextLinkGuardInterval); nextLinkGuardInterval = null; }
+
+    window.scrollTo(0, 0);
+    if(push) history.pushState({ spaUrl: targetUrl }, "", targetUrl);
+
+    runPageInit();
+  }catch(e){
+    location.href = targetUrl; // fallback aman kalau SPA-fetch gagal
+  }finally{
+    isSpaNavigating = false;
+  }
+}
+
+function initSpaNavigation(){
+  document.addEventListener("click", (e)=>{
+    if(e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest("a");
+    if(!a || !isInternalPageLink(a)) return;
+    e.preventDefault();
+    navigateTo(a.getAttribute("href"));
+  });
+  window.addEventListener("popstate", ()=> navigateTo(location.href, { push:false }));
+}
+
 /* ---------- 5b. SEQUENTIAL FLOW LOCK (gak bisa skip halaman) ---------- */
 // Urutan cerita website. Halaman baru kebuka kalau halaman sebelumnya sudah "dijawab/diselesaikan".
 const FLOW_ORDER = [
@@ -517,8 +592,8 @@ function applyNextLinkGuard(){
     }
   });
   refresh();
-  const iv = setInterval(refresh, 400);
-  window.addEventListener("beforeunload", ()=> clearInterval(iv));
+  if(nextLinkGuardInterval) clearInterval(nextLinkGuardInterval);
+  nextLinkGuardInterval = setInterval(refresh, 400);
 }
 
 /* ---------- 6. NAVIGATION ---------- */
@@ -600,7 +675,7 @@ const pageInitializers = {
       typeLines(el, lines);
     }
     const startBtn = document.getElementById("start-journey");
-    if(startBtn) startBtn.addEventListener("click", ()=> location.href = "tujuan.html");
+    if(startBtn) startBtn.addEventListener("click", ()=> navigateTo("tujuan.html"));
   },
 
   tujuan(){
@@ -747,7 +822,7 @@ const pageInitializers = {
       updateData(d=>{ d.personalityResult = top; });
       addPoints(15,"selesai personality quiz");
       box.innerHTML = `<div class="card center"><div style="font-size:2.6rem;">${r.icon}</div><h2>${r.name}</h2><p>${r.desc}</p>
-        <button class="btn" onclick="location.href='my-answers.html'">Lihat Semua Jawaban</button></div>`;
+        <button class="btn" onclick="navigateTo('my-answers.html')">Lihat Semua Jawaban</button></div>`;
     }
     render();
   },
@@ -988,8 +1063,6 @@ const pageInitializers = {
     `;
     const waBtn = document.getElementById("wa-send");
     if(waBtn) waBtn.addEventListener("click", ()=> sendToWhatsApp());
-    const tgBtn = document.getElementById("tg-send");
-    if(tgBtn) tgBtn.addEventListener("click", ()=> sendToTelegram());
   },
 
   final(){
@@ -1042,22 +1115,6 @@ function sendToWhatsApp(){
   const text = encodeURIComponent(buildSummaryText());
   window.open(`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=${text}`, "_blank");
 }
-async function sendToTelegram(){
-  if(!SITE_CONFIG.telegramApiUrl){
-    toast("Telegram integration belum dikonfigurasi.");
-    return;
-  }
-  try{
-    await fetch(SITE_CONFIG.telegramApiUrl, {
-      method:"POST", headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ text: buildSummaryText() })
-    });
-    toast("Terkirim ke Telegram! 🤖");
-  }catch(e){
-    toast("Gagal kirim ke Telegram. Coba lagi nanti.");
-  }
-}
-
 /* ---------- TYPING EFFECT ---------- */
 function typeLines(el, lines, speed=35){
   el.textContent = "";
@@ -1213,13 +1270,12 @@ function finishGame(id, score){
 /* ============================================================
    BOOTSTRAP
    ============================================================ */
-document.addEventListener("DOMContentLoaded", ()=>{
+function runPageInit(){
   if(!guardCurrentPage()) return;
   const page = document.body.dataset.page;
   renderNav(document.body.dataset.navfile || (page+".html"));
   trackVisit(page);
   refreshPointsPill();
-  initMusicPlayer();
   if(pageInitializers[page]) pageInitializers[page]();
   applyNextLinkGuard();
   if(sessionStorage.getItem("flowLockedMsg")){
@@ -1228,4 +1284,10 @@ document.addEventListener("DOMContentLoaded", ()=>{
   }
   const resetBtn = document.getElementById("reset-journey-btn");
   if(resetBtn) resetBtn.addEventListener("click", resetJourney);
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  initMusicPlayer(); // cuma dipanggil sekali di load pertama -> musik gak pernah di-restart pas ganti halaman
+  runPageInit();
+  initSpaNavigation();
 });
